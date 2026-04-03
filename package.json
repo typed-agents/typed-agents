@@ -1,0 +1,45 @@
+{
+  "name": "typed-agents",
+  "version": "1.0.0",
+  "description": "A TypeScript framework for building AI Agents and Tools with decorators, behavior files, composable sub-agents, streaming, and persistent state",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "agents",
+    "ai",
+    "typescript",
+    "zod",
+    "llm"
+  ],
+  "author": "typed-agents",
+  "license": "Apache-2.0",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "jsonrepair": "^3.13.2",
+    "ollama": "^0.6.3",
+    "reflect-metadata": "^0.2.2",
+    "zod": "^4.3.6",
+    "zod-to-json-schema": "^3.25.2"
+  }
+}
