@@ -80,7 +80,6 @@ export class MyClient implements LLMClient {
   async invoke(
     messages: LLMMessage[],
     tools?: ToolDefinition[],
-    options?: { temperature?: number }
   ): Promise<LLMResponse> {
     // your implementation
   }

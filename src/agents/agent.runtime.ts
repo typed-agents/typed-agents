@@ -222,12 +222,10 @@ export class AgentRuntime {
    *
    * @param context - Current agent context.
    * @param client - LLM client to use for planning.
-   * @param options - Run options (for temperature, etc.).
    */
   private async executePlanningStep(
     context: AgentContext,
     client: LLMClient,
-    options: RunOptions,
   ): Promise<void> {
     const planMessages: LLMMessage[] = [
       ...context.messages,
@@ -390,7 +388,7 @@ export class AgentRuntime {
 
     // P4: optional planning step before the main loop
     if (planningMode === "basic" || planningMode === "reflect") {
-      await this.executePlanningStep(context, client, options);
+      await this.executePlanningStep(context, client);
     }
 
     // ── Main ReAct loop ──────────────────────────────────────────────────
@@ -581,7 +579,7 @@ export class AgentRuntime {
     yield* flush();
 
     if (planningMode === "basic" || planningMode === "reflect") {
-      await this.executePlanningStep(context, client, options);
+      await this.executePlanningStep(context, client);
       yield* flush();
     }
 
