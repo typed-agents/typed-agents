@@ -1,6 +1,6 @@
 {
   "name": "typed-agents",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A TypeScript framework for building AI Agents and Tools with decorators, behavior files, composable sub-agents, streaming, and persistent state",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
