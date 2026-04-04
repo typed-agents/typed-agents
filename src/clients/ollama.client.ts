@@ -1,5 +1,5 @@
 import { Ollama } from "ollama";
-import type { ChatResponse, ToolCall } from "ollama";
+import type { ChatResponse, Options, ToolCall } from "ollama";
 import type {
   LLMClient,
   LLMMessage,
@@ -28,22 +28,18 @@ function normalizeToolCall(tc: ToolCall & { id?: string }): StandardToolCall {
 export class OllamaClient implements LLMClient {
   private ollama = new Ollama();
 
-  constructor(private model: string) {}
+  constructor(private model: string, private options?: Partial<Options>) {}
 
   async invoke(
     messages: LLMMessage[],
     tools?: ToolDefinition[],
-    options: { temperature?: number } = {}
   ): Promise<LLMResponse> {
     const response: ChatResponse = await this.ollama.chat({
       model: this.model,
       messages,
       tools: tools as any[],
       keep_alive: -1,
-      options: {
-        num_predict: 1000,
-        temperature: options.temperature ?? 0.2,
-      },
+      options: this.options,
     });
 
     return {
@@ -60,7 +56,6 @@ export class OllamaClient implements LLMClient {
   async *invokeStream(
     messages: LLMMessage[],
     tools?: ToolDefinition[],
-    options: { temperature?: number } = {}
   ): AsyncGenerator<StreamChunk> {
     const stream = await this.ollama.chat({
       model: this.model,
@@ -68,10 +63,7 @@ export class OllamaClient implements LLMClient {
       tools: tools as any[],
       stream: true,
       keep_alive: -1,
-      options: {
-        num_predict: 1000,
-        temperature: options.temperature ?? 0.2,
-      },
+      options: this.options,
     });
 
     let fullText = "";
