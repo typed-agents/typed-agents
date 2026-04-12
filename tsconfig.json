@@ -21,6 +21,7 @@
   "include": [
     "src/**/*"  
   ],
+  "exclude": ["examples/**/*"],
   "ts-node": {
     "files": true
   }
