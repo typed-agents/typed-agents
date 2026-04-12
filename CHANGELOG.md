@@ -11,7 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.0.1] - 2025-04-04
+## [1.0.2] - 2026-04-12
+
+### Added
+- fix typo in code of conduct
+- fix typo in changelog
+- add basic calculator agent example
+- add text analysis agent example
+
+---
+
+## [1.0.1] - 2026-04-04
 
 ### Added
 - Remove options parameter from executePlanningStep 
@@ -19,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.0.0] - 2025-04-03
+## [1.0.0] - 2026-04-03
 
 ### Added
 - `@agent` decorator for defining agents via class metadata (`reflect-metadata`)
