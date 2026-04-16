@@ -25,7 +25,7 @@ export function buildSystemPrompt(behavior: AgentBehavior): string {
   }
 
   if (behavior.answer) {
-    parts.push(`## ANSWER STYLE\n${behavior.answer}`);
+    parts.push(`## ANSWER\n${behavior.answer}`);
   }
 
   return parts.join("\n\n");

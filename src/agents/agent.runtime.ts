@@ -15,7 +15,7 @@ import { EventEmitter } from "events";
 import { OllamaClient } from "../clients/ollama.client";
 import { ToolDefinition, ToolMapEntry } from "../tools/tool.types";
 import { buildSystemPrompt } from "./behavior-engine/build-system-prompt";
-import { loadBehavior } from "./behavior-engine/load-behavior";
+import { clearLoadBehaviorCache, loadBehavior } from "./behavior-engine/load-behavior";
 import { withRetry } from "./runtime-engine/retry.utils";
 import { randomUUID } from "crypto";
 import {
@@ -26,6 +26,7 @@ import {
 } from "./runtime-engine/state-persistence";
 import path from "path";
 import fs from "fs";
+import { clearBehaviorCache } from "./behavior-engine";
 
 // ─────────────────────────────────────────────────────────────
 // P4 — Planning / Reflection prompts
@@ -210,7 +211,7 @@ export class AgentRuntime {
   private buildInitialMessages(systemPrompt: string, prompt: string): LLMMessage[] {
     return [
       { role: "system", content: systemPrompt },
-      { role: "user",   content: prompt },
+      { role: "user", content: prompt },
     ];
   }
 
@@ -310,6 +311,9 @@ export class AgentRuntime {
 
     let systemPrompt = metadata.systemPrompt ?? "You are a helpful AI assistant. Use tools if needed.";
     if (metadata.behavior) {
+      // patch/v.1.0.5: insert clear cache in metadata options
+      // clearBehaviorCache();
+      // clearLoadBehaviorCache();
       const behavior = loadBehavior(metadata.behavior);
       systemPrompt = buildSystemPrompt(behavior);
       if (!isSilent) {
@@ -343,26 +347,26 @@ export class AgentRuntime {
         return lastOutput;
       }
 
-      messages   = saved.messages;
-      state      = saved.state;
-      startStep  = saved.step;
+      messages = saved.messages;
+      state = saved.state;
+      startStep = saved.step;
       isResuming = true;
     } else {
-      messages  = this.buildInitialMessages(systemPrompt, prompt);
-      state     = { steps: 0, toolCalls: 0, startTime: Date.now() };
+      messages = this.buildInitialMessages(systemPrompt, prompt);
+      state = { steps: 0, toolCalls: 0, startTime: Date.now() };
       startStep = 0;
     }
 
     const context: AgentContext = {
       agentName: metadata.name,
-      input:     prompt,
+      input: prompt,
       messages,
       state,
-      step:      startStep,
+      step: startStep,
       toolMap,
       tools,
       startTime: Date.now(),
-      emit:      this.emit.bind(this),
+      emit: this.emit.bind(this),
       runId,
     };
 
@@ -384,7 +388,7 @@ export class AgentRuntime {
 
     const maxRetries = options.maxRetries ?? 3;
     const retryDelay = options.retryDelayMs ?? 800;
-    const backoff    = options.backoff ?? true;
+    const backoff = options.backoff ?? true;
 
     // P4: optional planning step before the main loop
     if (planningMode === "basic" || planningMode === "reflect") {
@@ -409,9 +413,15 @@ export class AgentRuntime {
         { name: "LLM" },
       );
 
+      // console.log("=== LLM RESPONSE ===");
+      // console.log(JSON.stringify(response, null, 2));
+      // console.log("====================");
+
+      // console.log(response)
+
       context.messages.push({
-        role:       "assistant",
-        content:    response.text,
+        role: "assistant",
+        content: response.text,
         tool_calls: response.tool_calls,
       });
       context.emit({
@@ -435,9 +445,25 @@ export class AgentRuntime {
 
       // Execute each tool call
       for (const call of response.tool_calls) {
-        const toolName   = call.function.name;
-        const toolArgs   = call.function.arguments;
-        const toolCallId = call.id;
+        // const toolName = call.function.name;
+        // const toolArgs = call.function.arguments;
+        // const toolCallId = call.id;
+
+        const toolName = call.function.name;
+        let toolArgs = call.function.arguments;
+
+        if (typeof toolArgs === 'string') {
+          try {
+            toolArgs = JSON.parse(toolArgs);
+          } catch (e) {
+            console.log("Failed to parse tool arguments:", toolArgs);
+            toolArgs = {};
+          }
+        }
+
+        // console.log(`Calling tool: ${toolName} with args:`, toolArgs);
+
+        const toolCallId = call.id || `call_${Date.now()}`;
 
         context.state.toolCalls++;
         context.emit({
@@ -461,8 +487,8 @@ export class AgentRuntime {
             payload: { name: toolName, result: toolResult.value },
           });
           context.messages.push({
-            role:         "tool",
-            content:      toolResult.value,
+            role: "tool",
+            content: toolResult.value,
             tool_call_id: toolCallId,
           });
         } else {
@@ -474,8 +500,8 @@ export class AgentRuntime {
           });
           // Pass a structured error back to the LLM so it can adapt
           context.messages.push({
-            role:         "tool",
-            content:      `[TOOL ERROR] ${toolResult.error}`,
+            role: "tool",
+            content: `[TOOL ERROR] ${toolResult.error}`,
             tool_call_id: toolCallId,
           });
         }
@@ -531,19 +557,19 @@ export class AgentRuntime {
     if (!metadata) throw new Error("Agent metadata not found");
 
     const effectiveMaxSteps = options.maxSteps ?? metadata.maxSteps ?? 5;
-    const planningMode      = options.planning ?? "none";
+    const planningMode = options.planning ?? "none";
 
     let systemPrompt = metadata.systemPrompt ?? "You are a helpful AI assistant. Use tools if needed.";
     if (metadata.behavior) {
       systemPrompt = buildSystemPrompt(loadBehavior(metadata.behavior));
     }
 
-    const client  = this.resolveClient(metadata, injectedClient);
+    const client = this.resolveClient(metadata, injectedClient);
     const toolMap = new Map<string, ToolMapEntry>();
     const tools: ToolDefinition[] = [];
     buildToolMap(metadata.tools, toolMap, tools);
 
-    const runId    = options.resumeId ?? randomUUID();
+    const runId = options.resumeId ?? randomUUID();
     const messages = this.buildInitialMessages(systemPrompt, prompt);
     const state: AgentState = { steps: 0, toolCalls: 0, startTime: Date.now() };
 
@@ -552,10 +578,10 @@ export class AgentRuntime {
 
     const context: AgentContext = {
       agentName: metadata.name,
-      input:     prompt,
+      input: prompt,
       messages,
       state,
-      step:      0,
+      step: 0,
       toolMap,
       tools,
       startTime: Date.now(),
@@ -585,7 +611,7 @@ export class AgentRuntime {
 
     const maxRetries = options.maxRetries ?? 3;
     const retryDelay = options.retryDelayMs ?? 800;
-    const backoff    = options.backoff ?? true;
+    const backoff = options.backoff ?? true;
 
     for (let step = 0; step < effectiveMaxSteps; step++) {
       context.step = step;
@@ -652,8 +678,8 @@ export class AgentRuntime {
       }
 
       for (const call of response.tool_calls) {
-        const toolName   = call.function.name;
-        const toolArgs   = call.function.arguments;
+        const toolName = call.function.name;
+        const toolArgs = call.function.arguments;
         const toolCallId = call.id;
 
         context.state.toolCalls++;
